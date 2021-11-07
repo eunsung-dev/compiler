@@ -9,7 +9,7 @@ typedef struct _YY {
 } YY;
 
 YY num;
-enum Token{ NUMBER, PLUS, STAR, LP, RP, END };
+enum Token{ NUMBER, PLUS, STAR, LP, RP, END, MINUS, DIVIDE };
 enum Token token;
 char str[SIZE] = {0,};
 int location;
@@ -40,25 +40,47 @@ int main(void) {
 YY expression() {
     YY result;
     result = term();
-    while(token == PLUS) {
+    while(token == PLUS || token == MINUS) {
+        int beforeToken = token;
         get_token();
         YY tempTerm;
         tempTerm = term();
-        if(result.type == Int && tempTerm.type == Int) {
-            result.value.i = result.value.i + tempTerm.value.i;
-            result.type = Int;
+        if(beforeToken == PLUS) {
+            if(result.type == Int && tempTerm.type == Int) {
+                result.value.i = result.value.i + tempTerm.value.i;
+                result.type = Int;
+            }
+            else if(result.type == Int && tempTerm.type == Float) {
+                result.value.f = (float)result.value.i + tempTerm.value.f;
+                result.type = Float;
+            }
+            else if(result.type == Float && tempTerm.type == Int) {
+                result.value.f = result.value.f + (float)tempTerm.value.i;
+                result.type = Float;
+            }
+            else if(result.type == Float && tempTerm.type == Float) {
+                result.value.f = result.value.f + tempTerm.value.f;
+                result.type = Float;
+            }
         }
-        else if(result.type == Int && tempTerm.type == Float) {
-            result.value.f = (float)result.value.i + tempTerm.value.f;
-            result.type = Float;
-        }
-        else if(result.type == Float && tempTerm.type == Int) {
-            result.value.f = result.value.f + (float)tempTerm.value.i;
-            result.type = Float;
-        }
-        else if(result.type == Float && tempTerm.type == Float) {
-            result.value.f = result.value.f + tempTerm.value.f;
-            result.type = Float;
+        else {
+            if(result.type == Int && tempTerm.type == Int) {
+                result.value.i = result.value.i - tempTerm.value.i;
+                result.type = Int;
+            }
+            else if(result.type == Int && tempTerm.type == Float) {
+                result.value.f = (float)result.value.i - tempTerm.value.f;
+                result.type = Float;
+            }
+            else if(result.type == Float && tempTerm.type == Int) {
+                result.value.f = result.value.f - (float)tempTerm.value.i;
+                result.type = Float;
+            }
+            else if(result.type == Float && tempTerm.type == Float) {
+                result.value.f = result.value.f - tempTerm.value.f;
+                result.type = Float;
+            }
+
         }
 
     }
@@ -68,10 +90,12 @@ YY expression() {
 YY term() {
     YY result;
     result = factor();
-    while(token == STAR) {
+    while(token == STAR || token == DIVIDE) {
+        int beforeToken = token;
         get_token();
         YY tempFactor;
         tempFactor = factor();
+        if(beforeToken == STAR) {
             if(result.type == Int && tempFactor.type == Int) {
                 result.value.i = result.value.i * tempFactor.value.i;
                 result.type = Int;
@@ -88,6 +112,26 @@ YY term() {
                 result.value.f = result.value.f * tempFactor.value.f;
                 result.type = Float;
             }
+        }
+        else {
+            if(result.type == Int && tempFactor.type == Int) {
+                result.value.i = result.value.i / tempFactor.value.i;
+                result.type = Int;
+            }
+            else if(result.type == Int && tempFactor.type == Float) {
+                result.value.f = (float)result.value.i / tempFactor.value.f;
+                result.type = Float;
+            }
+            else if(result.type == Float && tempFactor.type == Int) {
+                result.value.f = result.value.f / (float)tempFactor.value.i;
+                result.type = Float;
+            }
+            else if(result.type == Float && tempFactor.type == Float) {
+                result.value.f = result.value.f / tempFactor.value.f;
+                result.type = Float;
+            }
+        }
+
     }
     return (result);
 }
@@ -133,6 +177,14 @@ void get_token() {
     else if(ch == '\0') {
         token = END;
     }
+    // '-'일 경우
+    else if(ch == '-') {
+        token = MINUS;
+    }
+    // '/'일 경우
+    else if(ch == '/') {
+        token = DIVIDE;
+    }
     // 정수일 경우
     else if(ch >= '0' && ch <= '9') {
         token = NUMBER;
@@ -165,7 +217,7 @@ void error(int i) {
     switch (i) {
         case 1: printf("수식이 올바르지 않습니다.\n"); break;
         case 2: printf("'('와 ')'의 개수가 맞지 않습니다.\n"); break;
-        case 3: printf("정수 및 실수, '*', '+', '(', ')' 외에는 입력할 수 없습니다.\n"); break;
+        case 3: printf("정수 및 실수, '+', '*', '(', ')', '-', '/' 외에는 입력할 수 없습니다.\n"); break;
     }
     exit(1);
 }
